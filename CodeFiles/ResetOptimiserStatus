@@ -1,0 +1,45 @@
+// Reset the optimiser status on the header
+        
+System.IO.StreamWriter STDOUT = (System.IO.StreamWriter) null;
+const string Method = "BPM-Quote-Reset-Optimiser-Status";
+string OutPutFile = string.Format(@"C:\Temp\{0}.txt", Method);
+
+bool Debug = false;
+
+try
+{
+  if (Debug)
+  /**/  STDOUT = new System.IO.StreamWriter
+      (new System.IO.FileStream(OutPutFile, System.IO.FileMode.Append));
+  else
+  /**/  STDOUT = new System.IO.StreamWriter(System.IO.Stream.Null);  
+
+  STDOUT.WriteLine(string.Format("{0} - Start.", Method));
+  
+  foreach (var ttQuoteHed_iterator in (from ttQuoteHed_Row in result.QuoteHed
+      where ttQuoteHed_Row.Company == Session.CompanyID
+      select ttQuoteHed_Row))
+  {
+    var ttQuoteHedRow = ttQuoteHed_iterator;
+    
+    var QuoteHdr = (from oQuoteHdr in Db.QuoteHed
+                   where
+                   oQuoteHdr.Company == Session.CompanyID &&
+                   oQuoteHdr.QuoteNum == ttQuoteHedRow.QuoteNum
+                   select oQuoteHdr).FirstOrDefault();
+    if (QuoteHdr != null)
+      QuoteHdr.Opt_Status_c = 1;
+    
+    STDOUT.WriteLine(string.Format("QuoteNum <{0}>, RowMod <{1}>, OptStatus <{2}>", ttQuoteHedRow.QuoteNum, ttQuoteHedRow.RowMod, QuoteHdr.Opt_Status_c));
+  }
+}
+catch (Exception ex)
+{ 
+  STDOUT.WriteLine(string.Format("{0} - {1}", Method, ex.Message));
+}
+
+finally
+{
+  STDOUT.WriteLine(string.Format("{0} ----END---", Method));
+  STDOUT.Close();
+}
