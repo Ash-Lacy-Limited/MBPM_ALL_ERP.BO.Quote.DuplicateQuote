@@ -1,0 +1,97 @@
+// When Duplicating Quotes copy UD108 & UD108A data 
+System.IO.StreamWriter STDOUT = (System.IO.StreamWriter) null;
+
+const string Method = "BPM-Quote-DuplicateQuote-Post";
+string OutPutFile = string.Format(@"C:\Temp\{0}.txt", Method);
+
+bool Debug = false;
+
+try
+{
+    if (Debug)
+    /**/    STDOUT = new System.IO.StreamWriter
+            (new System.IO.FileStream(OutPutFile, System.IO.FileMode.Append));
+    else
+    /**/    STDOUT = new System.IO.StreamWriter(System.IO.Stream.Null);
+
+    STDOUT.WriteLine(string.Format("{0} - Start.", Method));
+
+    foreach (var Row in (from ttQuoteHed_R in result.QuoteHed
+            where ttQuoteHed_R.Company == Session.CompanyID
+            select ttQuoteHed_R))
+    {
+      var NewQuoteNum = Row.QuoteNum;
+  
+      STDOUT.WriteLine(string.Format("New Quote:{0}.", NewQuoteNum));
+  
+      using(var UD108svc = Ice.Assemblies.ServiceRenderer.GetService<UD108SvcContract>(Db))
+      {
+        UD108Tableset ds = new UD108Tableset();
+        UD108svc.GetaNewUD108(ref ds);
+        ds.UD108[0].Key1 = "Q";
+        ds.UD108[0].Key2 = NewQuoteNum.ToString();
+        UD108svc.Update(ref ds);
+        
+        foreach (var UD108A_Quote in (from UD108A_Row in Db.UD108A
+                                         where UD108A_Row.Company == Session.CompanyID &&
+                                         UD108A_Row.Key2 == sourceQuote.ToString() &&
+                                         UD108A_Row.ChildKey1 != "Y"
+                                         select UD108A_Row))
+          {
+             /* Update UD Record */
+             UD108A newUD108A = new UD108A();
+             newUD108A.Company = Session.CompanyID;
+             newUD108A.Key1 = "Q";
+             newUD108A.Key2 = NewQuoteNum.ToString();
+             newUD108A.ChildKey1 = UD108A_Quote.ChildKey1;
+             newUD108A.ChildKey2 = UD108A_Quote.ChildKey2;
+             newUD108A.ChildKey3 = UD108A_Quote.ChildKey3;
+             newUD108A.ChildKey4 = UD108A_Quote.ChildKey4;
+             newUD108A.ChildKey5 = NewQuoteNum.ToString();
+             newUD108A.Character01 = UD108A_Quote.Character01;
+             newUD108A.Character02 = UD108A_Quote.Character02;
+             newUD108A.Character03 = UD108A_Quote.Character03;
+             newUD108A.Character04 = UD108A_Quote.Character04;
+             newUD108A.Character05 = UD108A_Quote.Character05;
+             newUD108A.Character06 = UD108A_Quote.Character06;
+             newUD108A.Character07 = UD108A_Quote.Character07;
+             newUD108A.CheckBox01 = UD108A_Quote.CheckBox01;
+             newUD108A.CheckBox02 = UD108A_Quote.CheckBox02;
+             newUD108A.CheckBox03 = UD108A_Quote.CheckBox03;
+             newUD108A.CheckBox04 = UD108A_Quote.CheckBox04;
+             newUD108A.CheckBox05 = UD108A_Quote.CheckBox05;
+             newUD108A.Number01 = UD108A_Quote.Number01;
+             newUD108A.Number02 = UD108A_Quote.Number02;
+             newUD108A.Number03 = UD108A_Quote.Number03;
+             newUD108A.Number04 = UD108A_Quote.Number04;
+             newUD108A.Number05 = UD108A_Quote.Number05;
+             newUD108A.Number06 = UD108A_Quote.Number06;
+             newUD108A.Number07 = UD108A_Quote.Number07;
+             newUD108A.Number08 = UD108A_Quote.Number08;
+             newUD108A.Number09 = UD108A_Quote.Number09;
+             newUD108A.Number10 = UD108A_Quote.Number10;
+             newUD108A.Number11 = UD108A_Quote.Number11;
+             newUD108A.Number12 = UD108A_Quote.Number12;
+             newUD108A.Number13 = UD108A_Quote.Number13;
+             newUD108A.Number14 = UD108A_Quote.Number14;
+             newUD108A.Number15 = UD108A_Quote.Number15;
+             newUD108A.Number16 = UD108A_Quote.Number16;
+             newUD108A.Number17 = UD108A_Quote.Number17;
+             newUD108A.Number18 = UD108A_Quote.Number18;
+             newUD108A.Number19 = UD108A_Quote.Number19;
+      
+             Db.UD108A.Insert(newUD108A);
+          }
+      }
+   }
+}
+catch (Exception ex)
+{ 
+    STDOUT.WriteLine(string.Format("{0} - {1}", Method, ex.Message));
+}
+
+finally
+{
+    STDOUT.WriteLine(string.Format("{0} ----END---", Method));
+    STDOUT.Close();
+}
