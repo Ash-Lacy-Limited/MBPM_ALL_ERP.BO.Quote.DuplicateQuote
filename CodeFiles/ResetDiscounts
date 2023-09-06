@@ -1,0 +1,59 @@
+//Reset discounts on head and details of the new quote
+System.IO.StreamWriter STDOUT = (System.IO.StreamWriter) null;
+const string Method = "BPM-Quote-DuplicateQuote";
+string OutPutFile = string.Format(@"C:\Temp\{0}.txt", Method);
+
+bool Debug = false;
+int counter = 0;
+
+try
+{
+  if (Debug)
+  /**/  STDOUT = new System.IO.StreamWriter
+      (new System.IO.FileStream(OutPutFile, System.IO.FileMode.Append));
+  else
+  /**/  STDOUT = new System.IO.StreamWriter(System.IO.Stream.Null);  
+
+  STDOUT.WriteLine(string.Format("{0} - Start.", Method));
+  
+  using (var txScope = IceContext.CreateDefaultTransactionScope())
+  {
+        foreach (var newQuoteHed in Db.QuoteHed.Where(x => x.Company == Session.CompanyID && x.QuoteNum == newQuoteNum))
+        { 
+            QuoteSvcContract quoteBO = Ice.Assemblies.ServiceRenderer.GetService<QuoteSvcContract>(Db);
+            QuoteTableset quoteTS = quoteBO.GetBySysRowID(newQuoteHed.SysRowID); 
+            quoteTS.QuoteHed[counter].DiscountPercent = 0;
+            quoteTS.QuoteHed[counter].RowMod = "U";
+            quoteBO.Update(ref quoteTS);
+            counter++;
+        }
+        txScope.Complete(); 
+  }
+
+    using (var txScope = IceContext.CreateDefaultTransactionScope())
+    {
+            foreach (var newQuoteDtl in Db.QuoteDtl.Where(x => x.Company == Session.CompanyID && x.QuoteNum == newQuoteNum))
+            { 
+                QuoteSvcContract quoteBO = Ice.Assemblies.ServiceRenderer.GetService<QuoteSvcContract>(Db);
+                QuoteTableset quoteTS = quoteBO.GetBySysRowID(newQuoteDtl.SysRowID); 
+                STDOUT.WriteLine(newQuoteDtl.QuoteLine);
+                quoteTS.QuoteDtl[0].DiscountPercent = 0;
+                quoteTS.QuoteDtl[0].DocDiscount = 0;
+                quoteTS.QuoteDtl[0].RowMod = "U";
+                quoteBO.Update(ref quoteTS);
+            }
+            txScope.Complete(); 
+    }
+
+
+}
+catch (Exception ex)
+{ 
+  STDOUT.WriteLine(string.Format("{0} - {1}", Method, ex.Message));
+}
+
+finally
+{
+  STDOUT.WriteLine(string.Format("{0} ----END---", Method));
+  STDOUT.Close();
+}
